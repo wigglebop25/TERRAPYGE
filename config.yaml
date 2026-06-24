@@ -1,0 +1,45 @@
+# TERRAPYGE Configuration File
+
+# Project paths
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  data_graphs: data/graphs
+  models: models
+  results: results
+
+# Coordinate Reference System
+crs:
+  source: EPSG:4326  # WGS84
+  target: EPSG:32651  # UTM Zone 51N
+
+# Study area
+study_area:
+  name: Cebu City
+  watershed: Buhisan  # or Malubog
+  bbox: [123.8, 10.2, 124.0, 10.4]  # [min_lon, min_lat, max_lon, max_lat]
+
+# Slope unit parameters
+slope_units:
+  flow_accumulation_threshold: 200000  # square meters
+  reduction_factor: 2
+  min_area: 1000000  # square meters
+  min_circular_variance: 0.1
+
+# GNN parameters
+gnn:
+  hidden_channels: 128
+  num_layers: 2
+  dropout: 0.3
+  learning_rate: 0.005
+  weight_decay: 0.0005
+  epochs: 300
+  batch_size: full
+  early_stopping_patience: 20
+
+# Training parameters
+training:
+  train_ratio: 0.7
+  val_ratio: 0.15
+  test_ratio: 0.15
+  early_stopping_patience: 10

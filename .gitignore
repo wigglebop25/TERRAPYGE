@@ -1,0 +1,75 @@
+# TERRAPYGE .gitignore
+
+# Virtual environment (2 GB, never commit)
+venv/
+
+# Data files (too large for Git)
+data/raw/
+data/processed/
+data/graphs/
+data/grassdb/
+
+# Government data (redistribution restricted)
+Philippine Soil Series (shapefile)/
+
+# Model files
+models/trained/
+models/checkpoints/
+
+# Results
+results/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# OpenCode
+.opencode/
+
+# Sensitive documentation (local only — not tracked)
+AGENTS.md
+NEXT_STEPS.md
+TODO.md
+QUICK_REFERENCE.md
+PROJECT_SUMMARY.md
+TERRAPYGE Thesis Roadmap.md
+Advanced Graph Neural Network Frameworks for Lands....md
+notebooks/02_preprocess_dem.ipynb

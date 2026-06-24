@@ -1,0 +1,28 @@
+name: terrapyge
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - geopandas
+  - pysheds
+  - libpysal
+  - whitebox
+  - rasterio
+  - shapely
+  - pyproj
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - seaborn
+  - jupyter
+  - pip
+  - pip:
+    - torch
+    - torch-geometric
+    - torch-scatter
+    - torch-sparse
+    - torch-cluster
+    - folium
+    - plotly
