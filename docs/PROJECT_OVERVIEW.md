@@ -2,7 +2,7 @@
 
 ## About
 
-**TERRAPYGE** is a specialized deep learning pipeline and Graph Neural Network (GNN) framework designed for advanced landslide vulnerability mapping in Cebu City, Philippines. This project moves beyond traditional Euclidean, grid-based mapping approaches by modeling geographical points of interest as discrete nodes connected via spatial adjacency and hydrological flow pathways.
+**TERRAPYGE** is a specialized deep learning pipeline and Graph Neural Network (GNN) framework designed for advanced landslide susceptibility mapping in Cebu City, Philippines. This project moves beyond traditional Euclidean, grid-based mapping approaches by modeling geographical points of interest as discrete nodes connected via spatial adjacency and hydrological flow pathways.
 
 ## Key Innovation
 

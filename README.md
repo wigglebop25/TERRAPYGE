@@ -1,3 +1,5 @@
 # TERRAPYGE
 
-A Deep Learning Pipeline and Graph Neural Network (GNN) Architecture for Landslide Vulnerability Mapping in Cebu City, Philippines. Uses Slope Units instead of grid cells, with dual-edge modalities (spatial adjacency + hydrological flow) via PyTorch Geometric.
+**A Heterogeneous Graph Neural Network Framework for Landslide Susceptibility Mapping Using Slope Units with Spatial and Hydrological Edge Modalities**
+
+A deep learning pipeline that uses Slope Units instead of grid cells, with heterogeneous graph construction (spatial adjacency + hydrological flow) via PyTorch Geometric for landslide susceptibility mapping in Cebu City, Philippines.
