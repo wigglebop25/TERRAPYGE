@@ -68,8 +68,8 @@ TERRAPYGE/
 ## Timeline
 
 - **Total Duration**: 28 weeks (7 months)
-- **Thesis 1 (Proof of Concept)**: Weeks 1-14
-- **Thesis 2 (Final Defense)**: Weeks 15-28
+- **Phase 1 (Proof of Concept)**: Weeks 1-14
+- **Phase 2 (Final Delivery)**: Weeks 15-28
 
 ## Data Sources
 

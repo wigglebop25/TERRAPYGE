@@ -74,10 +74,10 @@ def test_project_structure():
     required_dirs = [
         'data/raw/dem',
         'notebooks',
-        'src/data',
-        'src/models',
-        'src/utils',
-        'src/visualization',
+        'src/terrapyge/data',
+        'src/terrapyge/models',
+        'src/terrapyge/utils',
+        'src/terrapyge/visualization',
         'models/trained',
         'models/checkpoints',
         'results/figures',
@@ -121,7 +121,7 @@ def main():
     print(f"Project structure: {'[OK] PASS' if structure_ok else '[FAIL] FAIL'}")
     
     if imports_ok and dem_ok and structure_ok:
-        print("\n[SUCCESS] ALL TESTS PASSED! You're ready to start coding your thesis!")
+        print("\n[SUCCESS] ALL TESTS PASSED! Environment is ready.")
         return 0
     else:
         print("\n[WARNING] Some tests failed. Please fix the issues above.")

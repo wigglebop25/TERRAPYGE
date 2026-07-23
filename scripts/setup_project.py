@@ -21,10 +21,10 @@ def create_directory_structure(base_path):
         'notebooks',
         
         # Source code
-        'src/data',
-        'src/models',
-        'src/utils',
-        'src/visualization',
+        'src/terrapyge/data',
+        'src/terrapyge/models',
+        'src/terrapyge/utils',
+        'src/terrapyge/visualization',
         
         # Models and results
         'models/trained',
@@ -361,7 +361,7 @@ def main():
     print("2. Activate environment: conda activate terrapyge")
     print("3. Start Jupyter: jupyter notebook")
     print("4. Begin with notebooks/01_data_acquisition.ipynb")
-    print("\nGood luck with your thesis! [OK]")
+    print("\nGood luck with your project! [OK]")
 
 if __name__ == "__main__":
     main()

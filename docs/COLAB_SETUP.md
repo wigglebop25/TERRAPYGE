@@ -110,8 +110,6 @@ wandb.login()
 print("Setup complete.")
 ```
 
-Replace `<YOUR_GITHUB_USER>` with your GitHub username.
-
 ### 2.3 Folder layout on Google Drive (set up once, manually)
 
 ```

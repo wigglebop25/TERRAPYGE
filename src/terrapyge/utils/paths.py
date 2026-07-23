@@ -5,7 +5,7 @@ Works identically on local Windows (D:/TERRAPYGE) and Google Colab
 the COLAB_GPU env var that Colab injects at session start.
 
 Usage:
-    from src.utils.paths import ROOT, DATA, GRAPHS, CHECKPOINTS
+    from src.terrapyge.utils.paths import ROOT, DATA, GRAPHS, CHECKPOINTS
 """
 
 from pathlib import Path

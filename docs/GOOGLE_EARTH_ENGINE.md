@@ -11,13 +11,13 @@ Google Earth Engine (GEE) is used to acquire Digital Elevation Model (DEM) data 
 ### Step 2: Register for Noncommercial Access
 1. **Organization Type:** Public or private academic institution
 2. **Plan:** Community (free, no credit card required)
-3. **Use Case:** Scientific research for thesis
+3. **Use Case:** Scientific research
 4. **Geographic Scope:** Regional (Cebu City, Philippines)
 
 ### Step 3: Approval
 - **Timeline:** Usually instant to 24 hours
 - **Cost:** Free for academic use
-- **Quota:** 150 EECU-hours (sufficient for thesis)
+- **Quota:** 150 EECU-hours (sufficient for project)
 
 ## DEM Extraction Script
 

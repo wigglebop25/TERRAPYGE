@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "terrapyge"
+version = "0.1.0"
+description = "Landslide susceptibility GNN for Cebu City, Philippines"
+readme = "README.md"
+authors = [{ name = "TERRAPYGE Project" }]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1",
+    "torch-geometric>=2.4",
+    "torch-scatter>=2.1",
+    "torch-sparse>=0.6",
+    "rasterio>=1.4",
+    "geopandas>=0.14",
+    "whitebox>=2.3",
+    "pysheds>=0.3",
+    "rasterstats>=0.19",
+    "scikit-learn>=1.3",
+    "xgboost>=2.0",
+    "optuna>=3.4",
+    "matplotlib>=3.7",
+    "folium>=0.14",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "earthengine-api>=0.1.374",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "black>=22.0", "isort>=5.0", "mypy"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["terrapyge*"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

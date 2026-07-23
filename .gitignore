@@ -63,13 +63,8 @@ Thumbs.db
 
 # OpenCode
 .opencode/
+opencode.json
 
 # Sensitive documentation (local only — not tracked)
-AGENTS.md
-NEXT_STEPS.md
-TODO.md
-QUICK_REFERENCE.md
-PROJECT_SUMMARY.md
-TERRAPYGE Thesis Roadmap.md
-Advanced Graph Neural Network Frameworks for Lands....md
-notebooks/02_preprocess_dem.ipynb
+docs/local/
+.obsidian/
