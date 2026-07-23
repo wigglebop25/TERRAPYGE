@@ -17,6 +17,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import folium
+from folium.plugins import Fullscreen, MiniMap, MeasureControl, Search
 
 from src.terrapyge.data.graph import load_graph
 from src.terrapyge.models.gnn import get_model
@@ -86,7 +87,7 @@ def get_color(prob):
         return '#F44336'  # Red
 
 
-def generate_hazard_map(gdf, probs, model_name, edge_config):
+def generate_hazard_map(gdf, probs, model_name, edge_config, features_df=None):
     """Generate hazard map files for a model."""
     # Add predictions to GeoDataFrame
     gdf_copy = gdf.copy()
@@ -115,7 +116,7 @@ def generate_hazard_map(gdf, probs, model_name, edge_config):
 
     # Generate Folium map
     html_path = PROC_DIR / f'hazard_{model_name}.html'
-    generate_folium_map(gdf_copy, probs, model_name, edge_config, html_path)
+    generate_folium_map(gdf_copy, probs, model_name, edge_config, html_path, features_df)
     print(f'  HTML: {html_path}')
 
     # Hazard class distribution
@@ -134,43 +135,110 @@ def generate_hazard_map(gdf, probs, model_name, edge_config):
     }
 
 
-def generate_folium_map(gdf, probs, model_name, edge_config, output_path):
-    """Generate interactive Folium map with OpenStreetMap tiles."""
-    # Center on Buhisan
-    centroid = gdf.geometry.centroid
+def generate_folium_map(gdf, probs, model_name, edge_config, output_path, features_df=None):
+    """Generate interactive Folium map with satellite, toggle, title, search, download."""
+    # Reproject to lat/lon for Folium
+    gdf_4326 = gdf.to_crs(epsg=4326)
+    centroid = gdf_4326.geometry.centroid
     center = [centroid.y.mean(), centroid.x.mean()]
 
-    m = folium.Map(location=center, zoom_start=13, tiles='OpenStreetMap')
+    # Satellite basemap (Esri World Imagery)
+    m = folium.Map(
+        location=center,
+        zoom_start=14,
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr='Esri World Imagery',
+        zoom_control=True,
+    )
 
-    # Add polygons
-    for idx, row in gdf.iterrows():
+    # OpenStreetMap toggle
+    folium.TileLayer(tiles='OpenStreetMap', name='OpenStreetMap', attr='OpenStreetMap').add_to(m)
+
+    # Title with AUC score
+    auc_value = 0.9500 if 'hydro_only' in model_name else 0.9491
+    model_label = model_name.replace('_', ' ').title()
+    title_html = f'''<div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;background:white;padding:10px 20px;border:2px solid grey;border-radius:5px;font-size:16px;font-weight:bold;box-shadow:2px 2px 6px rgba(0,0,0,0.3);">TERRAPYGE: {model_label} (AUC: {auc_value:.4f}) — Landslide Susceptibility</div>'''
+    m.get_root().html.add_child(folium.Element(title_html))
+
+    # Create groups for each hazard class
+    class_groups = {}
+    for cls in ['Very Low', 'Low', 'Moderate', 'High', 'Very High']:
+        class_groups[cls] = folium.FeatureGroup(name=f'Class: {cls}')
+
+    # Add polygons with popup and tooltip
+    for idx, row in gdf_4326.iterrows():
         prob = row['landslide_prob']
         color = get_color(prob)
-        folium.GeoJson(
-            row.geometry.__geo_interface__,
-            style_function=lambda x, p=prob, c=color: {
-                'fillColor': c,
-                'color': 'black',
-                'weight': 0.5,
-                'fillOpacity': 0.7,
-            },
-            tooltip=f"SU: {idx}<br>Prob: {prob:.3f}<br>Class: {get_hazard_class(prob)}"
-        ).add_to(m)
+        hazard_class = get_hazard_class(prob)
+        area_m2 = row.geometry.area * 111319.5 * 111319.5
 
-    # Add legend
-    legend_html = '''
-    <div style="position: fixed; bottom: 50px; left: 50px; width: 200px; height: 180px;
-    background-color: white; border:2px solid grey; z-index:9999; font-size:14px;
-    padding: 10px;">
-    <b>Landslide Susceptibility</b><br>
-    <i style="background:#2E7D32;width:20px;height:20px;display:inline-block;"></i> Very Low (<0.2)<br>
-    <i style="background:#8BC34A;width:20px;height:20px;display:inline-block;"></i> Low (0.2-0.4)<br>
-    <i style="background:#FFEB3B;width:20px;height:20px;display:inline-block;"></i> Moderate (0.4-0.6)<br>
-    <i style="background:#FF9800;width:20px;height:20px;display:inline-block;"></i> High (0.6-0.8)<br>
-    <i style="background:#F44336;width:20px;height:20px;display:inline-block;"></i> Very High (>0.8)
-    </div>
-    '''
+        popup_html = f'<b>Slope Unit: {idx}</b><br><b>Probability:</b> {prob:.3f}<br><b>Class:</b> {hazard_class}<br><b>Area:</b> {area_m2:.0f} m²<br>'
+
+        # Add detailed features if available
+        if features_df is not None:
+            su_row = features_df[features_df['su_id'] == idx]
+            if not su_row.empty:
+                su_data = su_row.iloc[0]
+                if 'slope_mean' in su_data:
+                    popup_html += f"<b>Slope:</b> {su_data.get('slope_mean', 'N/A'):.1f}°<br>"
+                if 'dem_mean' in su_data:
+                    popup_html += f"<b>Elevation:</b> {su_data.get('dem_mean', 'N/A'):.1f} m<br>"
+                if 'twi_mean' in su_data:
+                    popup_html += f"<b>TWI:</b> {su_data.get('twi_mean', 'N/A'):.2f}<br>"
+                if 'spi_mean' in su_data:
+                    popup_html += f"<b>SPI:</b> {su_data.get('spi_mean', 'N/A'):.2f}<br>"
+                if 'worldcover_mean' in su_data:
+                    popup_html += f"<b>Land Cover:</b> {su_data.get('worldcover_mean', 'N/A')}<br>"
+
+        geo_json = folium.GeoJson(
+            row.geometry.__geo_interface__,
+            style_function=lambda x, p=prob, c=color: {'fillColor': c, 'color': 'black', 'weight': 0.5, 'fillOpacity': 0.7},
+            tooltip=f"SU: {idx} | {hazard_class} | {prob:.3f}",
+            popup=folium.Popup(popup_html, max_width=300),
+            name=f'{idx} {hazard_class}'
+        )
+        geo_json.add_to(class_groups[hazard_class])
+
+    # Add all class groups to map
+    for cls, group in class_groups.items():
+        group.add_to(m)
+
+    # Create unified group for search
+    all_groups = folium.FeatureGroup(name='All Slope Units')
+    for cls, group in class_groups.items():
+        for child in group._children.values():
+            if isinstance(child, folium.GeoJson):
+                child.add_to(all_groups)
+    all_groups.add_to(m)
+
+    # Search bar (search by SU ID and hazard class)
+    Search(layer=all_groups, geom_type='Polygon', placeholder='Search SU ID or class...', collapsed=False, search_label='name', weight=3).add_to(m)
+
+    # Layer control
+    folium.LayerControl().add_to(m)
+
+    # Fullscreen button
+    Fullscreen().add_to(m)
+
+    # Minimap
+    m.add_child(MiniMap(toggle_display=True, position='bottomright'))
+
+    # Measurement tool
+    MeasureControl(position='topleft').add_to(m)
+
+    # Legend
+    legend_html = '''<div style="position:fixed;bottom:50px;left:50px;width:220px;height:220px;background:white;border:2px solid grey;z-index:9999;font-size:14px;padding:10px;border-radius:5px;"><b>Landslide Susceptibility</b><br><i style="background:#2E7D32;width:20px;height:20px;display:inline-block;"></i> Very Low (&lt;0.2)<br><i style="background:#8BC34A;width:20px;height:20px;display:inline-block;"></i> Low (0.2-0.4)<br><i style="background:#FFEB3B;width:20px;height:20px;display:inline-block;"></i> Moderate (0.4-0.6)<br><i style="background:#FF9800;width:20px;height:20px;display:inline-block;"></i> High (0.6-0.8)<br><i style="background:#F44336;width:20px;height:20px;display:inline-block;"></i> Very High (&gt;0.8)<br><hr style="margin:5px 0;"><small>Toggle basemap: top-right layer control</small></div>'''
     m.get_root().html.add_child(folium.Element(legend_html))
+
+    # Reset view button
+    reset_html = '<div style="position:fixed;top:10px;right:10px;z-index:9999;"><button onclick="map.setView(center, 14)" style="background:white;border:2px solid grey;border-radius:5px;padding:8px 12px;font-size:12px;cursor:pointer;box-shadow:2px 2px 6px rgba(0,0,0,0.3);">Reset View</button></div>'
+    m.get_root().html.add_child(folium.Element(reset_html))
+
+    # Download data button (exports ALL slope units as GeoJSON)
+    geojson_data = gdf_4326.to_json()
+    download_html = f'''<div style="position:fixed;top:10px;right:120px;z-index:9999;"><button onclick="downloadGeoJSON()" style="background:white;border:2px solid grey;border-radius:5px;padding:8px 12px;font-size:12px;cursor:pointer;box-shadow:2px 2px 6px rgba(0,0,0,0.3);">Download GeoJSON</button></div><script>function downloadGeoJSON(){{var data={geojson_data};var blob=new Blob([JSON.stringify(data)],{{type:'application/json'}});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='{model_name}_hazard_map.geojson';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}}</script>'''
+    m.get_root().html.add_child(folium.Element(download_html))
+
     m.save(output_path)
 
 
@@ -230,6 +298,15 @@ def main():
     gdf = gdf.set_index('su_id')
     print(f'  Loaded {len(gdf)} slope units')
 
+    # Load features CSV for popup data
+    features_csv = PROC_DIR / 'su_features.csv'
+    if features_csv.exists():
+        features_df = pd.read_csv(features_csv)
+        print(f'  Loaded features: {features_df.shape}')
+    else:
+        features_df = None
+        print('  No features CSV found')
+
     # Model 1: SAGE hydro-only
     print('\n' + '=' * 70)
     print('MODEL 1: SAGE HYDRO-ONLY')
@@ -246,7 +323,7 @@ def main():
     probs_hydro = run_inference(model_hydro, data, hydro_edge_dict)
     print(f'  Predictions: min={probs_hydro.min():.4f}, max={probs_hydro.max():.4f}, mean={probs_hydro.mean():.4f}')
 
-    hydro_metrics = generate_hazard_map(gdf, probs_hydro, 'sage_hydro_only', 'hydro_only')
+    hydro_metrics = generate_hazard_map(gdf, probs_hydro, 'sage_hydro_only', 'hydro_only', features_df)
 
     # Model 2: SAGE dual-edge
     print('\n' + '=' * 70)
@@ -263,7 +340,7 @@ def main():
     probs_dual = run_inference(model_dual, data, dual_edge_dict)
     print(f'  Predictions: min={probs_dual.min():.4f}, max={probs_dual.max():.4f}, mean={probs_dual.mean():.4f}')
 
-    dual_metrics = generate_hazard_map(gdf, probs_dual, 'sage_dual_edge', 'dual_edge')
+    dual_metrics = generate_hazard_map(gdf, probs_dual, 'sage_dual_edge', 'dual_edge', features_df)
 
     # Comparison
     print('\n' + '=' * 70)
@@ -325,6 +402,7 @@ def main():
     print(f'  {PROC_DIR / "hazard_sage_dual_edge.csv"}')
     print(f'  {PROC_DIR / "final_metrics.json"}')
     print(f'  {FIGURES_DIR / "hazard_comparison.png"}')
+    print('\nOpen the .html files in your browser to explore the interactive maps.')
 
 
 if __name__ == '__main__':
