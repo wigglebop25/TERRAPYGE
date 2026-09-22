@@ -16,8 +16,8 @@ conda activate terrapyge
 # 3. Authenticate GEE (once)
 earthengine authenticate
 
-# 4. Run full pipeline
-bash scripts/run_pipeline.sh
+# 4. Run full physics pipeline
+python scripts/run_physics_pipeline.py
 ```
 
 ---
@@ -70,111 +70,79 @@ earthengine ls
 ```
 TERRAPYGE/
 ├── pyproject.toml             # ← Single source of truth for deps
-├── config.yaml                # ← Runtime config
+├── config.yaml                # ← Runtime config (physics, gnn, hazard, inference)
 ├── environment.yml            # ← Conda env
-├── scripts/                   # Pipeline entry points
+├── scripts/                   # Pipeline entry points + legacy/ (archived)
 ├── src/terrapyge/             # Package
-│   ├── data/                  # Phases 1-4
-│   ├── models/                # GNN + baselines
-│   ├── utils/                 # Geo I/O, metrics
-│   └── visualization/         # Hazard map
+│   ├── data/                  # Acquisition, graph construction
+│   ├── features/              # Physics-informed features + labels
+│   ├── models/                # GNN, baselines, experiments
+│   ├── utils/                 # Geo I/O, paths, metrics
+│   └── visualization/         # Maps and plots
 ├── tests/                     # Test suite
 ├── data/
 │   ├── raw/                   # GEE downloads (gitignored)
 │   └── processed/             # Pipeline outputs (gitignored)
-├── models/                    # Trained weights (gitignored)
-│   ├── gnn_dual_edge.pt       # Dual-edge GNN model
-│   └── baselines/             # Baseline models (.pkl)
-└── results/                   # Metrics, maps (gitignored)
-    ├── baseline_comparison.json  # LR, RF, XGBoost vs GNN metrics
-    ├── model_comparison.json     # spatial-only vs dual-edge GNN
-    ├── figures/                  # Plots, charts
-    └── maps/                     # Hazard maps
+├── models/                    # Trained weights (gitignored; README tracked)
+│   └── ablation/              # GNN + baseline checkpoints
+├── docs/figures/              # Curated final figures (tracked)
+└── results/                   # Metrics, figures (gitignored)
+    ├── physics_ablation.json
+    ├── spatial_masking.json
+    └── figures/               # Plots, charts
 ```
 
 ---
 
 ## Pipeline Execution
 
-### Phase 1: DEM Preprocessing (~3 min)
+The maintained pipeline is orchestrated by `scripts/run_physics_pipeline.py`,
+which runs five steps in order:
 
 ```bash
-python -m scripts.phase1_dem_preprocessing
+# Run all steps
+python scripts/run_physics_pipeline.py
+
+# Resume from a step (1-5), or run a single step
+python scripts/run_physics_pipeline.py --from 3
+python scripts/run_physics_pipeline.py --only 2
 ```
 
-**Input**: `data/raw/buhisan/dem/Buhisan_DEM_SRTM_30m.tif`  
-**Output**: `data/processed/buhisan/`
-- `dem_utm.tif` — Reprojected to UTM 51N
-- `dem_conditioned.tif` — Whitebox fill depressions + pits
-- `slope.tif`, `aspect.tif` — Derivatives
-- `curv_plan.tif`, `curv_profile.tif`
-- `twi.tif`, `spi.tif` — Hydrological indices
+| Step | Script | Output |
+|------|--------|--------|
+| 1. Reproject 6-band soil | `scripts/reproject_soil_6band.py` | `data/processed/buhisan/soil_6band_utm.tif` |
+| 2. Physics features + labels | `scripts/build_physics_features.py` | `physics_features.csv`, `buhisan_hetero_physics.pt` |
+| 3. Physics ablation | `scripts/physics_ablation.py` | `results/physics_ablation.json`, `results/figures/physics_ablation.png` |
+| 4. Spatial masking | `scripts/spatial_masking_test.py` | `results/spatial_masking.json`, `results/figures/spatial_masking.png` |
+| 5. Hazard map | `scripts/generate_physics_hazard_map.py` | `physics_hazard_map.{gpkg,geojson,csv,html}` |
 
-### Phase 2: Slope Units (~5 min)
+### Prerequisites (raw -> processed)
 
-```bash
-# Option A: Automated (requires GRASS in PATH)
-python -m scripts.phase1_slope_units
+Steps 1-5 assume the processed slope-unit artifacts already exist in
+`data/processed/buhisan/`. Reproducing those from raw input uses external,
+non-scripted tooling:
 
-# Option B: Manual GRASS
-bash scripts/run_grass_slopeunits.sh
-```
+1. **DEM**: download SRTM 30 m from Google Earth Engine (see GEE Authentication).
+2. **Slope units**: extract with GRASS GIS `r.slopeunits` (see GRASS addon note
+   above) -> `slope_units.gpkg` + `su.tif` (13,297 units).
+3. **Node features**: aggregate terrain/environmental rasters to slope units
+   -> `su_features.csv`.
 
-**Output**: `data/processed/buhisan/`
-- `slope_units.gpkg` — 13,297 slope unit polygons
-- `su.tif` — Raster (13,297 unique IDs)
-
-### Phase 3: Feature Aggregation (~8 min)
-
-```bash
-python -m src.terrapyge.data.features
-```
-
-**Output**: `data/processed/buhisan/`
-- `su_features.csv` — Feature matrix (13297 × 15)
-- Updated `slope_units.gpkg` with feature columns
-
-### Phase 4: Graph Construction (~2 min)
-
-```bash
-python -m src.terrapyge.data.graph
-```
-
-**Output**: `data/processed/buhisan/buhisan_hetero.pt` (HeteroData)
-
-### Phase 5: GNN Training (~5 min)
-
-```bash
-python -m src.terrapyge.models.training
-```
-
-**Output**: `data/processed/buhisan/`
-- `best_model.pt` — State dict
-- `metrics.json` — AUC, AP, F1, loss curves
-
-### Phase 6: Hazard Map (~1 min)
-
-```bash
-python -m src.terrapyge.visualization.maps
-```
-
-**Output**: `data/processed/buhisan/`
-- `buhisan_hazard_map.gpkg` — Vector with 5-class hazard
-- `buhisan_hazard_map.geojson` — Web-ready
-- `buhisan_hazard_map.html` — Interactive Folium map
+The physics pipeline consumes these artifacts. Feature indices follow the locked
+schema in `DATA_SCHEMA.md` (21 features; index 20 is the label source).
 
 ---
 
 ## Expected Outputs (Verification)
 
-| File | Size | Validation Check |
-|------|------|------------------|
-| `data/processed/buhisan/dem_conditioned.tif` | ~800 KB | `np.nanmin() >= 0` |
-| `data/processed/buhisan/su.tif` | ~600 KB | `len(np.unique()) == 13297` |
-| `data/processed/buhisan/slope_units.gpkg` | ~4.5 MB | `len(gdf) == 13297` |
-| `data/processed/buhisan/buhisan_hetero.pt` | ~2 MB | `data['su'].num_nodes == 13297` |
-| `data/processed/buhisan/best_model.pt` | ~500 KB | Loads without error |
-| `data/processed/buhisan/buhisan_hazard_map.gpkg` | ~4.5 MB | 13,297 features, 5 classes |
+| File | Validation Check |
+|------|------------------|
+| `data/processed/buhisan/soil_6band_utm.tif` | 6 bands (clay, sand, silt, pH, bulk density, SOC) |
+| `data/processed/buhisan/slope_units.gpkg` | 13,297 slope units |
+| `data/processed/buhisan/buhisan_hetero_physics.pt` | 13,297 nodes; 21 features; spatial + hydro edges |
+| `data/processed/buhisan/physics_hazard_map.gpkg` | 13,297 features; 4 classes |
+| `results/spatial_masking.json` | dual-edge GNN retains AUC under topographic masking |
+| `models/ablation/with_physics__heterogcn__dual_edge.pt` | loads without error |
 
 ---
 
@@ -190,7 +158,7 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 ```
 
-All splits (train/val/test), synthetic labels, and model initialization use this seed.
+All splits (train/val/test), physics-derived labels, and model initialization use this seed.
 
 ---
 

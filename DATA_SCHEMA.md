@@ -185,16 +185,22 @@ y: LongTensor[13297]  # 0=Very Low, 1=Low, 2=Moderate, 3=High, 4=Very High
 ### `results/` — Analysis Outputs (gitignored)
 | File | Format | Contents |
 |------|--------|----------|
-| `baseline_comparison.json` | JSON | All model metrics (LR, RF, XGBoost, GNN) |
-| `model_comparison.json` | JSON | GNN spatial-only vs dual-edge comparison |
+| `physics_ablation.json` | JSON | With vs without physics features (GNN + baselines) |
+| `spatial_masking.json` | JSON | Graph vs non-graph AUC under topographic masking |
+| `figures/*.png` | PNG | Regenerated plots; curated copies tracked in `docs/figures/` |
 
 ### `models/` — Trained Model Weights (gitignored)
 | File | Format | Contents |
 |------|--------|----------|
-| `gnn_dual_edge.pt` | PyTorch state_dict | Dual-edge GNN model weights |
-| `baselines/*.pkl` | Pickle | Baseline model objects |
+| `ablation/<variant>__<backbone>__<edges>.pt` | PyTorch state_dict | GNN checkpoints (see `models/README.md`) |
+| `ablation/lr.pkl`, `rf.pkl`, `xgb.pkl` | Pickle | Non-graph baseline models |
 
-### Baseline Comparison Schema (`results/baseline_comparison.json`)
+> **Legacy (archived):** `results/baseline_comparison.json`,
+> `results/model_comparison.json`, `models/gnn_dual_edge.pt`, and
+> `models/baselines/*.pkl` came from the pre-physics pipeline now archived
+> under `scripts/legacy/`. The schema below documents that historical format.
+
+### Baseline Comparison Schema (legacy `results/baseline_comparison.json`)
 ```json
 {
   "Logistic Regression": {"model": "...", "auc": 0.XX, "ap": 0.XX, "f1": 0.XX},
