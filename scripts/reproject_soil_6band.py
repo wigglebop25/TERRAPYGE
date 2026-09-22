@@ -4,14 +4,19 @@ Fixes the earlier band-collapse bug where only band 1 was retained.
 Preserves: clay, sand, silt, ph, bulk_density, soc.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import numpy as np
 import rasterio
 from rasterio.warp import reproject, Resampling
-from pathlib import Path
 
-RAW_SOIL = Path(r'D:\TERRAPYGE\data\raw\buhisan\soil\Buhisan_SoilGrids_250m.tif')
-DEM_REF = Path(r'D:\TERRAPYGE\data\processed\buhisan\dem_utm.tif')
-OUT = Path(r'D:\TERRAPYGE\data\processed\buhisan\soil_6band_utm.tif')
+from src.terrapyge.utils.paths import PROCESSED_BUHISAN, RAW
+
+RAW_SOIL = RAW / 'buhisan' / 'soil' / 'Buhisan_SoilGrids_250m.tif'
+DEM_REF = PROCESSED_BUHISAN / 'dem_utm.tif'
+OUT = PROCESSED_BUHISAN / 'soil_6band_utm.tif'
 
 BAND_NAMES = ['clay', 'sand', 'silt', 'ph', 'bulk_density', 'soc']
 

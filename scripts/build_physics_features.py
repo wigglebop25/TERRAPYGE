@@ -12,14 +12,14 @@ Steps:
 """
 
 import sys
-sys.path.insert(0, r'D:\TERRAPYGE')
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import numpy as np
 import pandas as pd
 import geopandas as gpd
 import rasterio
 import torch
-from pathlib import Path
 from rasterstats import zonal_stats
 
 from src.terrapyge.features.physics import (
@@ -30,8 +30,8 @@ from src.terrapyge.features.physics import (
     newmark_displacement_cm,
     physics_labels,
 )
+from src.terrapyge.utils.paths import PROCESSED_BUHISAN as PROC_DIR, ROOT
 
-PROC_DIR = Path(r'D:\TERRAPYGE\data\processed\buhisan')
 SOIL_6BAND = PROC_DIR / 'soil_6band_utm.tif'
 SU_GPKG = PROC_DIR / 'slope_units.gpkg'
 FEATURES_CSV = PROC_DIR / 'su_features.csv'
@@ -41,7 +41,7 @@ OUT_GRAPH = PROC_DIR / 'buhisan_hetero_physics.pt'
 
 # Physics parameters (from config.yaml)
 import yaml
-with open(r'D:\TERRAPYGE\config.yaml') as _f:
+with open(ROOT / 'config.yaml') as _f:
     _cfg = yaml.safe_load(_f)
 _PHYS = _cfg.get('physics', {})
 PGA_G = float(_PHYS.get('pga_g', 0.4))

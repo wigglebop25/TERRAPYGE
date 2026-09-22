@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 
-SCRIPTS = Path(r'D:\TERRAPYGE\scripts')
+SCRIPTS = Path(__file__).resolve().parent
 
 STEPS = [
     ('1. Reproject 6-band soil', 'reproject_soil_6band.py'),
