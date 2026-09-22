@@ -11,6 +11,7 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 ## Completed
 - Scripted raw -> processed geospatial pipeline (`run_geospatial_pipeline.py`)
 - License, citation metadata, and artifact manifest (`docs/ARTIFACT_MANIFEST.md`)
+- Bootstrap 95% CIs and paired significance tests (`scripts/bootstrap_ci.py`, `scripts/significance_tests.py`)
 - Soil 6-band reprojection to the UTM grid
 - Slope units (13,297) and node-feature aggregation
 - Physics-informed features and labels (infinite-slope FS, Arias intensity,
@@ -29,6 +30,7 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 - Local task tracking and roadmap maintenance
 
 ## Next
+- Spatial/block cross-validation (Stage B4) to address label circularity
 - Optional: full end-to-end pipeline verification run
 
 ## Known Issues

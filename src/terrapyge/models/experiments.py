@@ -32,6 +32,44 @@ KEPT_COLS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 19]
 GNN_MODELS = ['HeteroGCN', 'HeteroSAGE', 'HeteroGAT']
 EDGE_CONFIGS = ['spatial_only', 'hydro_only', 'dual_edge']
 
+# Feature index sets for the physics ablation. Index 20 (newmark_dn_cm) is the
+# direct source of the physics label and is excluded from every model input.
+BASE_FEATURE_IDX = list(range(14))          # 14 terrain/environment features
+PHYSICS_FEATURE_IDX = list(range(14)) + [14, 15, 16, 17, 18, 19]  # 20 features
+
+
+def predict_node_probs(model, x, edge_index_dict):
+    """Return positive-class probabilities for every node.
+
+    Args:
+        model: trained heterogeneous GNN.
+        x: node feature tensor [N, F].
+        edge_index_dict: edge-type -> edge_index mapping.
+
+    Returns:
+        numpy array of shape [N] with P(class 1).
+    """
+    model.eval()
+    with torch.no_grad():
+        out = model({'su': x}, edge_index_dict)
+        return torch.softmax(out, dim=1)[:, 1].cpu().numpy()
+
+
+def load_gnn_model(model_path, model_type, in_channels, config):
+    """Load a trained GNN checkpoint into a fresh model of the same shape."""
+    gnn_cfg = config.get('gnn', {})
+    model = get_model(
+        model_type=model_type,
+        in_channels=in_channels,
+        hidden_channels=gnn_cfg.get('hidden_channels', 64),
+        out_channels=2,
+        num_layers=gnn_cfg.get('num_layers', 3),
+        dropout=gnn_cfg.get('dropout', 0.2),
+    )
+    model.load_state_dict(torch.load(model_path, weights_only=True))
+    model.eval()
+    return model
+
 
 def get_edge_configs(data):
     """Return the 3 edge-config variants (spatial / hydro / dual) from a graph."""
