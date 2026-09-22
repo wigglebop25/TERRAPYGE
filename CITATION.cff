@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "TERRAPYGE: Physics-Informed Graph Neural Network for Earthquake-Induced Landslide Susceptibility Mapping Using Slope Units with Spatial and Hydrological Edge Modalities"
+version: 0.1.0
+date-released: "2026-09-22"
+license: MIT
+repository-code: "https://github.com/wigglebop25/TERRAPYGE"
+authors:
+  - alias: "wigglebop25"
+abstract: >-
+  Physics-informed Graph Neural Network for earthquake-induced landslide
+  susceptibility mapping using slope units with spatial and hydrological edge
+  modalities. Applied to the Buhisan Watershed, Cebu City, Philippines.
+keywords:
+  - landslide susceptibility
+  - graph neural network
+  - physics-informed
+  - slope units
+  - spatial and hydrological edges

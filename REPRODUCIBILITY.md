@@ -249,4 +249,5 @@ All splits (train/val/test), physics-derived labels, and model initialization us
 
 ## License
 
-MIT License — See `LICENSE` file for details.
+MIT License - see `LICENSE` for details. Citation metadata is in `CITATION.cff`;
+the artifact inventory and reference results are in `docs/ARTIFACT_MANIFEST.md`.

@@ -10,6 +10,7 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 
 ## Completed
 - Scripted raw -> processed geospatial pipeline (`run_geospatial_pipeline.py`)
+- License, citation metadata, and artifact manifest (`docs/ARTIFACT_MANIFEST.md`)
 - Soil 6-band reprojection to the UTM grid
 - Slope units (13,297) and node-feature aggregation
 - Physics-informed features and labels (infinite-slope FS, Arias intensity,
