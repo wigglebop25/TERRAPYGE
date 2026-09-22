@@ -1,0 +1,85 @@
+# TERRAPYGE Configuration File
+
+# Project paths
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  data_graphs: data/graphs
+  models: models
+  results: results
+
+# Coordinate Reference System
+crs:
+  source: EPSG:4326  # WGS84
+  target: EPSG:32651  # UTM Zone 51N
+
+# Study area
+study_area:
+  name: Cebu City
+  watershed: Buhisan  # or Malubog
+  bbox: [123.86, 10.28, 123.95, 10.36]  # [min_lon, min_lat, max_lon, max_lat]
+
+# Slope unit parameters
+slope_units:
+  algorithm: r.slopeunits
+  threshold: 5000
+  reduction_factor: 1.0
+  min_area: 10000  # square meters
+  cvmin: 0.1
+  max_iterations: 100
+
+# Feature extraction
+features:
+  stats: ["mean"]  # or ["mean", "std", "min", "max"]
+  scaler: StandardScaler
+
+# Physics-informed features (infinite-slope + Newmark displacement)
+physics:
+  pga_g: 0.4                    # Peak Ground Acceleration (Philippines seismic Zone 4 default)
+  duration_s: 10.0              # significant duration for Arias intensity approximation
+  soil_depth_m: 2.0             # assumed failure-plane depth
+  pore_pressure_ratio: 0.15     # ru (moderately wet conditions)
+  label_thresholds_cm: [2.0, 5.0, 15.0]  # Low / Moderate / High / Very High (Newmark Dn)
+  binary_threshold_cm: 2.0      # Moderate-or-higher defines the positive class
+
+# GNN parameters (synced with actual training run)
+gnn:
+  model_type: HeteroGCN  # HeteroGCN, HeteroSAGE, HeteroGAT
+  hidden_channels: 64
+  num_layers: 3
+  dropout: 0.2
+  learning_rate: 0.001
+  weight_decay: 0.0005
+  epochs: 100
+  batch_size: 1024
+  early_stopping_patience: 15
+  seed: 42
+
+# Baseline model parameters
+baselines:
+  logistic_regression:
+    max_iter: 1000
+  random_forest:
+    n_estimators: 100
+  xgboost:
+    n_estimators: 100
+    learning_rate: 0.1
+
+# Training parameters
+training:
+  train_ratio: 0.64
+  val_ratio: 0.16
+  test_ratio: 0.20
+  pos_rate: 0.15
+  seed: 42
+
+# Hazard map
+hazard:
+  physics_n_classes: 4          # Low / Moderate / High / Very High
+  method: quantile              # quantile (matches physics class proportions)
+  class_labels: ["Low", "Moderate", "High", "Very High"]
+
+# Inference (which trained model and edge modality the hazard map uses)
+inference:
+  model: with_physics__heterogcn__dual_edge   # -> models/ablation/<model>.pt
+  edge_config: dual_edge                       # spatial_only | hydro_only | dual_edge
