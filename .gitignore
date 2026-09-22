@@ -1,0 +1,81 @@
+# TERRAPYGE .gitignore
+
+# Virtual environment (2 GB, never commit)
+venv/
+
+# Data files (too large for Git)
+data/raw/
+data/processed/
+data/graphs/
+data/grassdb/
+
+# Government data (redistribution restricted)
+Philippine Soil Series (shapefile)/
+
+# Model artifacts (large, regenerable binaries - see models/README.md)
+models/*
+!models/README.md
+*.pt
+*.pkl
+*.pth
+*.onnx
+
+# Results
+results/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs
+*.log
+
+# Test / type-check caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# OpenCode
+.opencode/
+opencode.json
+
+# Sensitive documentation (local only — not tracked)
+docs/local/
+.obsidian/
