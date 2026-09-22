@@ -1,13 +1,12 @@
 """Compute hydrological edges and update graph."""
 import sys
-sys.path.insert(0, r'D:\TERRAPYGE')
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.terrapyge.data.graph import (
     load_pysheds_grid, compute_hydro_edges, validate_graph, load_graph, save_graph
 )
-from pathlib import Path
-
-PROC_DIR = Path(r'D:\TERRAPYGE\data\processed\buhisan')
+from src.terrapyge.utils.paths import PROCESSED_BUHISAN as PROC_DIR
 
 # 1. Load pysheds grid
 print('Loading DEM into pysheds...')
