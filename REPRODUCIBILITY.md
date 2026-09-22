@@ -116,20 +116,45 @@ python scripts/run_physics_pipeline.py --only 2
 | 4. Spatial masking | `scripts/spatial_masking_test.py` | `results/spatial_masking.json`, `results/figures/spatial_masking.png` |
 | 5. Hazard map | `scripts/generate_physics_hazard_map.py` | `physics_hazard_map.{gpkg,geojson,csv,html}` |
 
-### Prerequisites (raw -> processed)
+### Geospatial pipeline (raw -> processed)
 
-Steps 1-5 assume the processed slope-unit artifacts already exist in
-`data/processed/buhisan/`. Reproducing those from raw input uses external,
-non-scripted tooling:
+The physics steps above consume processed artifacts in
+`data/processed/buhisan/`. Those are produced by the geospatial pipeline
+(`scripts/run_geospatial_pipeline.py`), kept separate because it needs GRASS GIS
+and heavier raster tooling:
 
-1. **DEM**: download SRTM 30 m from Google Earth Engine (see GEE Authentication).
-2. **Slope units**: extract with GRASS GIS `r.slopeunits` (see GRASS addon note
-   above) -> `slope_units.gpkg` + `su.tif` (13,297 units).
-3. **Node features**: aggregate terrain/environmental rasters to slope units
-   -> `su_features.csv`.
+| Step | Script | Output |
+|------|--------|--------|
+| 1. DEM export | Manual (Google Earth Engine; see GEE Authentication) | `data/raw/buhisan/dem/Buhisan_DEM_SRTM_30m.tif` |
+| 2. Reproject rasters to UTM 51N | `scripts/build_rasters_utm.py` | `data/processed/buhisan/*_utm.tif` |
+| 3. DEM conditioning | `scripts/build_dem.py` | `dem_conditioned.tif` |
+| 4. Terrain derivatives | `scripts/build_terrain_derivatives.py` | `slope.tif`, `aspect.tif`, `curv_plan.tif`, `curv_profile.tif`, `twi.tif`, `spi.tif` |
+| 5. Slope units | `scripts/build_slope_units.py` (GRASS `r.slopeunits`) | `slope_units.gpkg`, `su.tif` |
+| 6. Feature aggregation | `scripts/build_su_features.py` | `su_features.csv` |
+| 7. Base graph | `scripts/build_spatial_edges.py` + `scripts/compute_hydro_edges.py` | `buhisan_hetero.pt` |
 
-The physics pipeline consumes these artifacts. Feature indices follow the locked
-schema in `DATA_SCHEMA.md` (21 features; index 20 is the label source).
+```bash
+# Full geospatial pipeline (requires GRASS GIS in PATH)
+python scripts/run_geospatial_pipeline.py
+
+# Resume from a step, or run a single step
+python scripts/run_geospatial_pipeline.py --from 3
+python scripts/run_geospatial_pipeline.py --only 2
+```
+
+Notes:
+- Step 1 (DEM export) is manual; the GEE script is in `docs/GOOGLE_EARTH_ENGINE.md`.
+- Step 5 runs GRASS `r.slopeunits` via `grass84.bat --exec`; parameters come from
+  `slope_units:` in `config.yaml`.
+- Spatial edges are undirected Queen contiguity (`libpysal`); hydrological edges
+  are directed D8 flow (`pysheds`).
+- Reconciliation targets: ~13,297 slope units, the `su_features.csv` column set,
+  and the spatial + hydro edge modalities. Exact numeric equality is not
+  guaranteed across library versions.
+
+The physics pipeline (step 2 onwards in the table above) then consumes these
+artifacts. Feature indices follow the locked schema in `DATA_SCHEMA.md`
+(21 features; index 20 is the label source).
 
 ---
 
