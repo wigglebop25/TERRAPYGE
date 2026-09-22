@@ -152,6 +152,13 @@ Notes:
   and the spatial + hydro edge modalities. Exact numeric equality is not
   guaranteed across library versions.
 
+**Validation (vs the reference artifacts):** UTM rasters and SU spatial edges
+reproduce exactly (0 difference; 88,772 spatial edges; 13,297 units). Soil,
+landcover, climate and water feature means are exact. DEM conditioning and
+slope/curvature differ only within small tolerances; TWI and SPI differ more
+because they depend on the specific-catchment-area method. Slope-unit extraction
+with `r.slopeunits` is stochastic and may yield a slightly different SU count.
+
 The physics pipeline (step 2 onwards in the table above) then consumes these
 artifacts. Feature indices follow the locked schema in `DATA_SCHEMA.md`
 (21 features; index 20 is the label source).

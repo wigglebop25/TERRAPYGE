@@ -9,6 +9,7 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 **In Progress**.
 
 ## Completed
+- Scripted raw -> processed geospatial pipeline (`run_geospatial_pipeline.py`)
 - Soil 6-band reprojection to the UTM grid
 - Slope units (13,297) and node-feature aggregation
 - Physics-informed features and labels (infinite-slope FS, Arias intensity,
@@ -27,12 +28,13 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 - Local task tracking and roadmap maintenance
 
 ## Next
-- Document the raw -> processed path (DEM download and slope-unit extraction)
 - Optional: full end-to-end pipeline verification run
 
 ## Known Issues
-- The raw -> processed geospatial steps rely on external tooling (DEM source and
-  GRASS GIS) and are not fully scripted in this repository
+- Raw -> processed geospatial steps are now scripted (`run_geospatial_pipeline.py`);
+  slope-unit extraction still depends on GRASS and is stochastic
+- TWI/SPI and DEM conditioning reproduce the documented method within tolerance,
+  not bit-exact
 - Legacy pre-physics scripts are retained under `scripts/legacy/` for provenance
   only and are superseded
 
