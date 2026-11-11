@@ -6,7 +6,7 @@ modalities (Buhisan Watershed, Cebu City).
 
 ## Status
 Core research pipeline: **Complete**. Documentation and repository hygiene:
-**In Progress**.
+**Complete**. Remaining work is the thesis write-up and defense.
 
 ## Completed
 - Scripted raw -> processed geospatial pipeline (`run_geospatial_pipeline.py`)
@@ -25,10 +25,11 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 - Physics unit tests and installation smoke tests
 - Spatial/block cross-validation (Stage B4): random vs blocked folds, transductive
   vs inductive training (`scripts/spatial_cv.py`)
+- Reproducibility and data-schema documentation sync (`REPRODUCIBILITY.md`,
+  `DATA_SCHEMA.md`, `docs/ARTIFACT_MANIFEST.md`)
 - Documentation aligned to the approved thesis title; repository cleaned
 
 ## In Progress
-- Reproducibility and data-schema documentation sync
 - Local task tracking and roadmap maintenance
 
 ## Next
@@ -49,5 +50,5 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 
 ## Milestones
 - Physics-informed modeling pipeline: Complete
-- Reproducibility and documentation: In Progress
+- Reproducibility and documentation: Complete
 - Thesis write-up and defense: Pending
