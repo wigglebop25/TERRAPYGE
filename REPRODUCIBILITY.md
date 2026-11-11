@@ -89,6 +89,7 @@ TERRAPYGE/
 └── results/                   # Metrics, figures (gitignored)
     ├── physics_ablation.json
     ├── spatial_masking.json
+    ├── spatial_cv.json
     └── figures/               # Plots, charts
 ```
 
@@ -165,6 +166,36 @@ artifacts. Feature indices follow the locked schema in `DATA_SCHEMA.md`
 
 ---
 
+## Cross-Validation (Stage B4)
+
+`scripts/spatial_cv.py` is a validation experiment rather than a pipeline step:
+it quantifies how much of the reported AUC comes from spatial autocorrelation
+and label circularity. It does not need to run to regenerate pipeline artifacts.
+
+```bash
+python scripts/spatial_cv.py
+python scripts/spatial_cv.py --folds 5 --n-blocks 25 --model-types all
+```
+
+It sweeps three protocols over the same models:
+
+| Protocol | Split | GNN training graph |
+|----------|-------|--------------------|
+| `random_transductive` | random stratified k-fold | whole graph (status quo) |
+| `block_transductive` | spatially blocked k-fold | whole graph |
+| `block_inductive` | spatially blocked k-fold | induced subgraph of train + val only |
+
+Blocks are square cells over the slope-unit extent (`--n-blocks`, default 25,
+which is about 2 km per side for Buhisan); whole blocks are assigned to folds so
+folds stay spatially contiguous. `--buffer-m` additionally drops training nodes
+within that distance of the held-out block. Two feature modes are reported:
+`full` (features 0-19) and `masked` (the topographic block zeroed on held-out
+nodes, matching `spatial_masking_test.py`).
+
+Outputs: `results/spatial_cv.json` and `results/figures/spatial_cv.png`.
+
+---
+
 ## Expected Outputs (Verification)
 
 | File | Validation Check |
@@ -174,6 +205,7 @@ artifacts. Feature indices follow the locked schema in `DATA_SCHEMA.md`
 | `data/processed/buhisan/buhisan_hetero_physics.pt` | 13,297 nodes; 21 features; spatial + hydro edges |
 | `data/processed/buhisan/physics_hazard_map.gpkg` | 13,297 features; 4 classes |
 | `results/spatial_masking.json` | dual-edge GNN retains AUC under topographic masking |
+| `results/spatial_cv.json` | random vs spatially blocked folds reported per protocol |
 | `models/ablation/with_physics__heterogcn__dual_edge.pt` | loads without error |
 
 ---

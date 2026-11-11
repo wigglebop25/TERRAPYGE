@@ -23,6 +23,8 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 - Spatial masking experiment (graph value under topographic masking)
 - Config-driven 4-class hazard map + interactive HTML map
 - Physics unit tests and installation smoke tests
+- Spatial/block cross-validation (Stage B4): random vs blocked folds, transductive
+  vs inductive training (`scripts/spatial_cv.py`)
 - Documentation aligned to the approved thesis title; repository cleaned
 
 ## In Progress
@@ -30,10 +32,14 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 - Local task tracking and roadmap maintenance
 
 ## Next
-- Spatial/block cross-validation (Stage B4) to address label circularity
 - Optional: full end-to-end pipeline verification run
+- Optional: extend Stage B4 to all three GNN backbones and a buffer-distance sweep
 
 ## Known Issues
+- Full-feature AUC is ~1.0 for every model because the physics label is a
+  deterministic function of slope, which is itself an input feature. Spatial
+  blocking does not change this, so only the topographic-masked protocols in
+  `results/spatial_cv.json` are informative about graph value.
 - Raw -> processed geospatial steps are now scripted (`run_geospatial_pipeline.py`);
   slope-unit extraction still depends on GRASS and is stochastic
 - TWI/SPI and DEM conditioning reproduce the documented method within tolerance,
