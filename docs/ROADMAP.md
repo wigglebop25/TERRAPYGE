@@ -25,8 +25,8 @@ Core research pipeline: **Complete**. Documentation and repository hygiene:
 - Physics unit tests and installation smoke tests
 - Spatial/block cross-validation (Stage B4): random vs blocked folds, transductive
   vs inductive training (`scripts/spatial_cv.py`)
-- Reproducibility and data-schema documentation sync (`REPRODUCIBILITY.md`,
-  `DATA_SCHEMA.md`, `docs/ARTIFACT_MANIFEST.md`)
+- Reproducibility and data-schema documentation sync (`docs/REPRODUCIBILITY.md`,
+  `docs/DATA_SCHEMA.md`, `docs/ARTIFACT_MANIFEST.md`)
 - Documentation aligned to the approved thesis title; repository cleaned
 
 ## In Progress

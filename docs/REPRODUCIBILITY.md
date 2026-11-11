@@ -72,6 +72,9 @@ TERRAPYGE/
 ├── pyproject.toml             # ← Single source of truth for deps
 ├── config.yaml                # ← Runtime config (physics, gnn, hazard, inference)
 ├── environment.yml            # ← Conda env
+├── README.md                  # ← Project overview
+├── LICENSE                    # ← MIT licence
+├── CITATION.cff               # ← Citation metadata
 ├── scripts/                   # Pipeline entry points + legacy/ (archived)
 ├── src/terrapyge/             # Package
 │   ├── data/                  # Acquisition, graph construction
@@ -85,7 +88,13 @@ TERRAPYGE/
 │   └── processed/             # Pipeline outputs (gitignored)
 ├── models/                    # Trained weights (gitignored; README tracked)
 │   └── ablation/              # GNN + baseline checkpoints
-├── docs/figures/              # Curated final figures (tracked)
+├── docs/                      # Documentation (tracked)
+│   ├── ROADMAP.md             # Project status and milestones
+│   ├── ARCHITECTURE.md        # System architecture
+│   ├── DATA_SCHEMA.md         # Feature and graph schema
+│   ├── REPRODUCIBILITY.md     # This guide
+│   ├── ARTIFACT_MANIFEST.md   # Artifact inventory and reference results
+│   └── figures/               # Curated final figures
 └── results/                   # Metrics, figures (gitignored)
     ├── physics_ablation.json
     ├── spatial_masking.json
