@@ -93,12 +93,67 @@ def get_edge_configs(data):
     }
 
 
+def build_induced_subgraph(data, node_idx):
+    """Return the subgraph induced by ``node_idx``, with edges reindexed.
+
+    Used for inductive evaluation: the model is trained on the subgraph of
+    training nodes only, so held-out nodes are never seen during training.
+    Edge types with no surviving edges are kept as empty ``[2, 0]`` tensors so
+    the edge-type schema still matches the full graph.
+
+    Args:
+        data: HeteroData graph with a ``su`` node store.
+        node_idx: array-like of node indices to keep.
+
+    Returns:
+        sub: HeteroData subgraph over the kept nodes.
+        remap: LongTensor [N_full] mapping full-graph index -> subgraph index,
+            or -1 for nodes that were dropped.
+    """
+    from torch_geometric.data import HeteroData
+
+    node_idx = torch.as_tensor(node_idx, dtype=torch.long)
+    n_full = data['su'].num_nodes
+
+    keep = torch.zeros(n_full, dtype=torch.bool)
+    keep[node_idx] = True
+    remap = torch.full((n_full,), -1, dtype=torch.long)
+    remap[node_idx] = torch.arange(node_idx.numel(), dtype=torch.long)
+
+    sub = HeteroData()
+    sub['su'].x = data['su'].x[node_idx]
+    sub['su'].y = data['su'].y[node_idx]
+    sub['su'].num_nodes = int(node_idx.numel())
+
+    for edge_type in data.edge_types:
+        edge_index = data[edge_type].edge_index
+        both_kept = keep[edge_index[0]] & keep[edge_index[1]]
+        sub[edge_type].edge_index = remap[edge_index[:, both_kept]]
+
+    return sub, remap
+
+
 def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
-                         models_dir=None):
+                         models_dir=None, eval_data=None, eval_edge_index_dict=None,
+                         eval_mask=None, save_model=True):
     """Train a single GNN experiment and return a results dict.
 
     Uses the split masks already present on ``data['su']`` and early-stops on
     validation AUC. Saves the best state dict to ``models_dir/{model_name}.pt``.
+
+    Args:
+        data: graph used for training; must carry train/val masks.
+        edge_index_dict: edge-type -> edge_index for the training graph.
+        model_type: one of ``GNN_MODELS``.
+        config: full config dict.
+        model_name: checkpoint name (also used for the ``edge_config`` label).
+        models_dir: checkpoint directory; defaults to ``ABLATION_MODELS``.
+        eval_data: optional graph to evaluate on instead of ``data``. Used for
+            inductive evaluation, where training happens on an induced subgraph
+            and the held-out nodes are scored on the full graph.
+        eval_edge_index_dict: edge-type -> edge_index for ``eval_data``.
+        eval_mask: boolean test mask over ``eval_data`` nodes.
+        save_model: set False to skip writing a checkpoint.
     """
     if models_dir is None:
         models_dir = ABLATION_MODELS
@@ -130,7 +185,13 @@ def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
 
     train_mask = data['su'].train_mask
     val_mask = data['su'].val_mask
-    test_mask = data['su'].test_mask
+
+    # Evaluation target: the training graph by default, or a separate graph for
+    # inductive evaluation (held-out nodes absent during training).
+    if eval_data is None:
+        eval_data = data
+        eval_edge_index_dict = edge_index_dict
+        eval_mask = data['su'].test_mask
 
     best_val_auc = 0
     best_epoch = 0
@@ -196,10 +257,10 @@ def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
     # Test evaluation
     model.eval()
     with torch.no_grad():
-        out = model(x_dict, edge_index_dict)
-        test_loss = criterion(out[test_mask], data['su'].y[test_mask]).item()
-        probs = torch.softmax(out[test_mask], dim=1)[:, 1].cpu().numpy()
-        labels = data['su'].y[test_mask].cpu().numpy()
+        out = model({'su': eval_data['su'].x}, eval_edge_index_dict)
+        test_loss = criterion(out[eval_mask], eval_data['su'].y[eval_mask]).item()
+        probs = torch.softmax(out[eval_mask], dim=1)[:, 1].cpu().numpy()
+        labels = eval_data['su'].y[eval_mask].cpu().numpy()
 
         try:
             test_auc = roc_auc_score(labels, probs)
@@ -215,8 +276,9 @@ def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     # Save model
-    save_path = models_dir / f'{model_name}.pt'
-    torch.save(model.state_dict(), save_path)
+    if save_model:
+        save_path = models_dir / f'{model_name}.pt'
+        torch.save(model.state_dict(), save_path)
 
     # Extract attention weights for GAT
     attention_weights = None
