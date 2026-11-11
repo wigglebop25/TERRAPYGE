@@ -217,7 +217,7 @@ reaches `binary_threshold_cm` (2.0 cm), which is the Moderate-or-higher class.
 Because the label is a deterministic function of slope, and slope is itself an
 input feature, full-feature AUC approaches 1.0 for every model. Only the
 topographic-masked protocols in `results/spatial_cv.json` are informative about
-graph value; see `ROADMAP.md` Known Issues.
+graph value; see `docs/ROADMAP.md` Known Issues.
 
 ---
 
