@@ -30,6 +30,7 @@ GNN/training hyperparameters, hazard classes, `inference:`).
 | Physics graph | `data/processed/buhisan/buhisan_hetero_physics.pt` | 13,297 nodes; 21 features; 88,772 spatial + 24,666 hydro edges |
 | Hazard map | `data/processed/buhisan/physics_hazard_map.{gpkg,geojson,csv,html}` | 4 classes (Low/Moderate/High/Very High) |
 | Spatial masking metrics | `results/spatial_masking.json` | dual-edge GNN retains AUC under masking |
+| Spatial/block CV metrics | `results/spatial_cv.json` | random vs blocked folds, transductive vs inductive |
 | Physics ablation metrics | `results/physics_ablation.json` | with vs without physics features |
 | Curated figures | `docs/figures/*.png` | 7 tracked figures |
 | Preferred model | `models/ablation/with_physics__heterogcn__dual_edge.pt` | loads without error |
@@ -40,6 +41,20 @@ GNN/training hyperparameters, hazard classes, `inference:`).
   High 239 / Very High 44.
 - Spatial masking: dual-edge GNN retains ~0.965 AUC while non-graph baselines
   drop to ~0.32-0.87 (topographic covariates withheld from test nodes).
+- Spatial/block CV (5 folds, 25 blocks of ~1,974 m, dual-edge HeteroGCN), test AUC:
+
+  | Feature mode | Protocol | GNN | Best baseline |
+  |--------------|----------|-----|---------------|
+  | full | random transductive | 0.978 | 1.000 |
+  | full | block inductive | 0.973 | 1.000 |
+  | masked | random transductive | 0.960 | 0.651 |
+  | masked | block transductive | 0.937 | 0.725 |
+  | masked | block inductive | 0.873 | 0.725 |
+
+  In `full` mode every baseline reaches AUC 1.000 under every protocol: the
+  label is a deterministic function of slope, so spatial blocking finds no
+  leakage to remove. Under topographic masking the graph advantage is real and
+  survives the most conservative protocol (inductive, spatially blocked).
 
 ## Verification
 
