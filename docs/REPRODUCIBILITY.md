@@ -265,8 +265,6 @@ All splits (train/val/test), physics-derived labels, and model initialization us
 |---------|---------|
 | torch | 2.1.0 |
 | torch-geometric | 2.4.0 |
-| torch-scatter | 2.1.2 |
-| torch-sparse | 0.6.18 |
 | rasterio | 1.4.3 |
 | geopandas | 0.14.4 |
 | whitebox | 2.3.0 |

@@ -23,8 +23,6 @@ REQUIRED_PACKAGES = [
     'pyproj',
     'torch',
     'torch_geometric',
-    'torch_scatter',
-    'torch_sparse',
     'whitebox',
     'pysheds',
     'libpysal',

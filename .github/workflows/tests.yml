@@ -18,10 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Fast, reliable signal on every push and pull request. Runs the tests that
-  # only need the scientific stack, deliberately excluding test_installation.py
-  # because that one asserts torch_scatter / torch_sparse, which need a source
-  # build and are slow and fragile on hosted runners.
+  # Fast, reliable signal on every push and pull request. Installs only the
+  # scientific stack the unit tests need, rather than the full package, so the
+  # required check stays under a minute.
   tests:
     name: unit tests
     runs-on: ubuntu-latest
@@ -56,9 +55,11 @@ jobs:
             tests/test_metrics.py \
             -v
 
-  # Full-stack installation check. Allowed to fail: the geospatial and sparse
-  # extension wheels are not guaranteed to build on every runner, and a red X
-  # here should not block a merge. It only runs on pull requests.
+  # Full-stack installation check: installs the package exactly as a user
+  # would, then asserts every declared dependency imports. Runs on pull
+  # requests only. Kept advisory because the geospatial stack pulls native
+  # libraries that can fail to build on a runner for reasons unrelated to the
+  # change under review.
   installation:
     name: installation smoke test (advisory)
     runs-on: ubuntu-latest
