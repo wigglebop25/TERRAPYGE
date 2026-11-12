@@ -1,0 +1,76 @@
+name: tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast, reliable signal on every push and pull request. Runs the tests that
+  # only need the scientific stack, deliberately excluding test_installation.py
+  # because that one asserts torch_scatter / torch_sparse, which need a source
+  # build and are slow and fragile on hosted runners.
+  tests:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install \
+            torch-geometric \
+            numpy \
+            scipy \
+            scikit-learn \
+            pandas \
+            matplotlib \
+            pyyaml \
+            geopandas \
+            pytest
+
+      - name: Run tests
+        run: |
+          python -m pytest \
+            tests/test_physics.py \
+            tests/test_spatial_cv.py \
+            tests/test_metrics.py \
+            -v
+
+  # Full-stack installation check. Allowed to fail: the geospatial and sparse
+  # extension wheels are not guaranteed to build on every runner, and a red X
+  # here should not block a merge. It only runs on pull requests.
+  installation:
+    name: installation smoke test (advisory)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install package with full dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[dev]"
+
+      - name: Run installation smoke test
+        run: python -m pytest tests/test_installation.py -v
