@@ -56,6 +56,21 @@ GNN/training hyperparameters, hazard classes, `inference:`).
   leakage to remove. Under topographic masking the graph advantage is real and
   survives the most conservative protocol (inductive, spatially blocked).
 
+- Threshold and F1. F1 is reported at a validation-selected, prevalence-matched
+  threshold rather than a fixed 0.5, because the positive rate is 14.55% and a
+  0.5 cut predicts almost no positives. Under the masked inductive protocol the
+  dual-edge GNN reaches F1 0.535 (precision 0.686, recall 0.442) against 0.394
+  for the best baseline (XGBoost, precision 0.333, recall 0.582). Random forest
+  is the degenerate case: its probabilities collapse toward zero, so
+  prevalence-matching flags every unit and reports recall 1.000 at precision
+  0.145.
+
+  | Masked protocol | GNN F1 | GNN P | GNN R | Best baseline F1 |
+  |-----------------|--------|-------|-------|------------------|
+  | random transductive | 0.747 | 0.704 | 0.797 | 0.310 |
+  | block transductive | 0.658 | 0.739 | 0.606 | 0.394 |
+  | block inductive | 0.535 | 0.686 | 0.442 | 0.394 |
+
 ## Verification
 
 Geospatial artifacts were validated against the reference:
