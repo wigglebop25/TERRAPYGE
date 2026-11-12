@@ -14,6 +14,9 @@ import torch.nn as nn
 from sklearn.metrics import roc_auc_score, average_precision_score, f1_score
 
 from src.terrapyge.models.gnn import get_model
+from src.terrapyge.utils.metrics import (
+    prevalence_matched_threshold, thresholded_metrics,
+)
 from src.terrapyge.utils.paths import ABLATION_MODELS
 
 # Node-feature schema for the physics graph (21 features; index 20 is the
@@ -135,7 +138,7 @@ def build_induced_subgraph(data, node_idx):
 
 def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
                          models_dir=None, eval_data=None, eval_edge_index_dict=None,
-                         eval_mask=None, save_model=True):
+                         eval_mask=None, save_model=True, calibration_x=None):
     """Train a single GNN experiment and return a results dict.
 
     Uses the split masks already present on ``data['su']`` and early-stops on
@@ -154,6 +157,11 @@ def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
         eval_edge_index_dict: edge-type -> edge_index for ``eval_data``.
         eval_mask: boolean test mask over ``eval_data`` nodes.
         save_model: set False to skip writing a checkpoint.
+        calibration_x: optional node features used to compute validation
+            probabilities for threshold selection. Pass the same feature
+            withholding that the evaluation applies, so that the decision
+            threshold is selected under the inference condition rather than on
+            unmasked data.
     """
     if models_dir is None:
         models_dir = ABLATION_MODELS
@@ -262,6 +270,15 @@ def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
         probs = torch.softmax(out[eval_mask], dim=1)[:, 1].cpu().numpy()
         labels = eval_data['su'].y[eval_mask].cpu().numpy()
 
+        # Validation probabilities, used only to select the decision threshold.
+        # When the evaluation withholds features from held-out nodes, the caller
+        # passes calibration_x with the same withholding applied, so the
+        # threshold is selected under the inference condition.
+        cal_x = calibration_x if calibration_x is not None else data['su'].x
+        val_out = model({'su': cal_x}, edge_index_dict)
+        val_probs = torch.softmax(val_out[val_mask], dim=1)[:, 1].cpu().numpy()
+        val_labels = data['su'].y[val_mask].cpu().numpy()
+
         try:
             test_auc = roc_auc_score(labels, probs)
             test_ap = average_precision_score(labels, probs)
@@ -271,6 +288,14 @@ def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
 
         preds = (probs > 0.5).astype(int)
         test_f1 = f1_score(labels, preds, zero_division=0)
+
+    # F1 at a fixed 0.5 threshold is uninformative at a 14.55% positive rate, so
+    # the decision threshold is selected on validation data and reported with
+    # precision and recall at that threshold. The prevalence-matched rule is
+    # used because the F1-optimal rule collapses to extreme thresholds for
+    # models with little signal.
+    decision_threshold = prevalence_matched_threshold(val_labels, val_probs)
+    calibrated = thresholded_metrics(labels, probs, decision_threshold)
 
     # Count parameters
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -302,6 +327,11 @@ def train_gnn_experiment(data, edge_index_dict, model_type, config, model_name,
         'test_auc': float(test_auc),
         'test_ap': float(test_ap),
         'test_f1': float(test_f1),
+        'test_f1_calibrated': float(calibrated['f1']),
+        'test_precision': float(calibrated['precision']),
+        'test_recall': float(calibrated['recall']),
+        'test_predicted_positive_rate': float(calibrated['predicted_positive_rate']),
+        'decision_threshold': float(calibrated['threshold']),
         'num_params': int(num_params),
         'convergence_epoch': int(best_epoch),
         'training_time_sec': float(training_time),
