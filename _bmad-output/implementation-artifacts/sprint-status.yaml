@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-12-2026 12:05
-last_updated: 11-12-2026 12:05
+last_updated: 11-12-2026 12:24
 project: TERRAPYGE
 project_key: NOKEY
 tracking_system: file-system
@@ -47,8 +47,9 @@ development_status:
   epic-2: in-progress
   2-1-spatial-and-block-cross-validation: done
   2-2-calibrate-the-decision-threshold-for-f1-reporting: done
-  2-3-investigate-the-xgboost-masking-anomaly: backlog
+  2-3-investigate-the-xgboost-masking-anomaly: done
   2-4-extend-stage-b4-to-all-backbones-and-a-buffer-sweep: backlog
+  2-5-remove-the-slope-proxy-leak-from-the-masking-experiment: backlog
   epic-2-retrospective: optional
 
   epic-3: in-progress
