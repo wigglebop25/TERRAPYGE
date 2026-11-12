@@ -21,8 +21,5 @@ dependencies:
   - pip:
     - torch
     - torch-geometric
-    - torch-scatter
-    - torch-sparse
-    - torch-cluster
     - folium
     - plotly
