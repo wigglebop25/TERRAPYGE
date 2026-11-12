@@ -125,6 +125,13 @@ def main():
         d['su'].val_mask = val_mask
         d['su'].test_mask = test_mask
 
+        # Calibration features: validation nodes withheld in the same way as the
+        # held-out nodes, so a threshold selected on validation transfers to the
+        # masked test set instead of being calibrated on unmasked data.
+        x_cal = x.clone()
+        val_idx = np.flatnonzero(val_mask.numpy())
+        x_cal[torch.as_tensor(val_idx).reshape(-1, 1), MASK_COLS] = 0.0
+
         # Sanity checks
         assert torch.all(d['su'].x[masked_idx.reshape(-1, 1), MASK_COLS] == 0), 'masking failed'
         pos_rate = d['su'].y[test_mask].float().mean().item()
@@ -139,27 +146,38 @@ def main():
         for model_type in MODEL_TYPES:
             for edge_name, eidx in edge_configs.items():
                 exp = f'{tag}__{model_type.lower()}__{edge_name}'
-                res = train_gnn_experiment(d, eidx, model_type, config, exp)
+                res = train_gnn_experiment(d, eidx, model_type, config, exp,
+                                           calibration_x=x_cal)
                 run['gnn'][f'{model_type.lower()}__{edge_name}'] = {
                     'test_auc': res['test_auc'],
                     'test_ap': res['test_ap'],
                     'test_f1': res['test_f1'],
+                    'test_f1_calibrated': res['test_f1_calibrated'],
+                    'test_precision': res['test_precision'],
+                    'test_recall': res['test_recall'],
+                    'decision_threshold': res['decision_threshold'],
                     'convergence_epoch': res['convergence_epoch'],
                 }
                 print(f'  GNN {model_type:<10} {edge_name:<13} '
-                      f'AUC={res["test_auc"]:.4f} AP={res["test_ap"]:.4f} F1={res["test_f1"]:.4f}')
+                      f'AUC={res["test_auc"]:.4f} AP={res["test_ap"]:.4f} '
+                      f'F1={res["test_f1_calibrated"]:.4f} '
+                      f'P={res["test_precision"]:.4f} R={res["test_recall"]:.4f}')
 
         # Baselines: identical split, no graph, slope masked on test
         X = d['su'].x.numpy()
+        X_cal = x_cal.numpy()
         y = d['su'].y.numpy()
         train_idx_np = train_mask.numpy()
+        val_idx_np = val_mask.numpy()
         test_idx_np = test_mask.numpy()
         base = run_baselines(X[train_idx_np], y[train_idx_np],
-                             X[test_idx_np], y[test_idx_np], config)
+                             X[test_idx_np], y[test_idx_np], config,
+                             X_val=X_cal[val_idx_np], y_val=y[val_idx_np])
         run['baselines'] = base
         for name, m in base.items():
             print(f'  BASE {name:<10} {"-":<13} '
-                  f'AUC={m["auc"]:.4f} AP={m["ap"]:.4f} F1={m["f1"]:.4f}')
+                  f'AUC={m["auc"]:.4f} AP={m["ap"]:.4f} F1={m["f1"]:.4f} '
+                  f'P={m["precision"]:.4f} R={m["recall"]:.4f}')
 
         results['runs'][tag] = run
 
