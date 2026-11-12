@@ -46,7 +46,7 @@ development_status:
 
   epic-2: in-progress
   2-1-spatial-and-block-cross-validation: done
-  2-2-calibrate-the-decision-threshold-for-f1-reporting: review
+  2-2-calibrate-the-decision-threshold-for-f1-reporting: done
   2-3-investigate-the-xgboost-masking-anomaly: backlog
   2-4-extend-stage-b4-to-all-backbones-and-a-buffer-sweep: backlog
   epic-2-retrospective: optional
