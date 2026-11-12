@@ -1,8 +1,14 @@
 name: tests
 
 on:
+  # Development happens on dev, so pushes are only tested there. main is a
+  # release branch: it is not pushed to directly, and its content is verified
+  # through the dev -> main pull request instead.
   push:
-    branches: [main, dev]
+    branches: [dev]
+  # pull_request.branches filters on the BASE branch. main must stay listed:
+  # the main protection ruleset requires the "unit tests" check, so a PR
+  # targeting main has to run it or it could never merge.
   pull_request:
     branches: [main, dev]
   workflow_dispatch:

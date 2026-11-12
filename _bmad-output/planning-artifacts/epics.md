@@ -65,6 +65,18 @@ either dismiss it as a composition artifact or add a caveat. GitHub issue #10.
 Run all three GNN backbones and a buffer-distance sweep to test how sensitive
 the 0.873 figure is to those choices. GitHub issue #5.
 
+### Story 2.5: Remove the slope-proxy leak from the masking experiment
+
+The masked block is not the only route to the label. Four kept covariates
+(chirps, worldcover, jrc_water, dynamicworld) correlate with slope at |rho|
+0.65-0.73, and an XGBoost trained on the kept block alone reaches AUC 0.982
+under the random-split masking protocol against 0.969 for the dual-edge GNN.
+Retrain the baselines on the kept block only, add a proxy-masked condition that
+also withholds those four covariates, and retrain the GNN on the same feature
+space so the comparison is like for like. Also decide whether the two constant
+features (era5, arias) should be dropped or regenerated. GitHub issue: not yet
+opened. See `docs/EVALUATION_CAVEATS.md`.
+
 ## Epic 3: Reproducibility and automation
 
 Make the repository verifiable by someone other than its author.

@@ -41,6 +41,14 @@ GNN/training hyperparameters, hazard classes, `inference:`).
   High 239 / Very High 44.
 - Spatial masking: dual-edge GNN retains ~0.965 AUC while non-graph baselines
   drop to ~0.32-0.87 (topographic covariates withheld from test nodes).
+
+  Caveat: these baseline figures are a train/test feature-mismatch artifact. The
+  baselines are trained on all 20 features and scored with 9 zeroed, and XGBoost
+  places 98-99% of its gain on the masked block, so its score collapses to a
+  near-constant at test time. A baseline trained on the kept block alone reaches
+  AUC 0.982 under the same protocol. The apparent XGBoost rise with mask rate is
+  seed noise (2 of 5 seeds) over that collapsed score. See
+  `docs/EVALUATION_CAVEATS.md` and `scripts/diagnose_masking_artifact.py`.
 - Spatial/block CV (5 folds, 25 blocks of ~1,974 m, dual-edge HeteroGCN), test AUC:
 
   | Feature mode | Protocol | GNN | Best baseline |
@@ -53,8 +61,11 @@ GNN/training hyperparameters, hazard classes, `inference:`).
 
   In `full` mode every baseline reaches AUC 1.000 under every protocol: the
   label is a deterministic function of slope, so spatial blocking finds no
-  leakage to remove. Under topographic masking the graph advantage is real and
-  survives the most conservative protocol (inductive, spatially blocked).
+  leakage to remove. Under topographic masking the graph retains the higher AUC,
+  but the size of that advantage is provisional: four kept covariates (chirps,
+  worldcover, jrc_water, dynamicworld) correlate with slope at |rho| 0.65-0.73,
+  so the masked block is not the only route to the label. See
+  `docs/EVALUATION_CAVEATS.md` section 2.
 
 - Threshold and F1. F1 is reported at a validation-selected, prevalence-matched
   threshold rather than a fixed 0.5, because the positive rate is 14.55% and a
