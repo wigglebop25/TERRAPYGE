@@ -103,8 +103,10 @@ def main():
         X = d['su'].x.numpy()
         y = d['su'].y.numpy()
         X_tr, y_tr = X[train_mask.numpy()], y[train_mask.numpy()]
+        X_va, y_va = X[val_mask.numpy()], y[val_mask.numpy()]
         X_te, y_te = X[test_mask.numpy()], y[test_mask.numpy()]
-        base = run_baselines(X_tr, y_tr, X_te, y_te, config)
+        base = run_baselines(X_tr, y_tr, X_te, y_te, config,
+                             X_val=X_va, y_val=y_va)
         results['baselines'][variant] = base
 
     # Summary

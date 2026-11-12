@@ -219,8 +219,8 @@ def summarize(folds, section):
     for key in keys:
         entries = [fold[section][key] for fold in folds if key in fold[section]]
         summary[key] = {
-            metric: aggregate([entry[metric] for entry in entries])
-            for metric in ('auc', 'ap', 'f1')
+            metric: aggregate([entry.get(metric) for entry in entries])
+            for metric in ('auc', 'ap', 'f1', 'precision', 'recall')
         }
     return summary
 
@@ -228,18 +228,27 @@ def summarize(folds, section):
 def gnn_record(result, degenerate):
     """Convert a training result into a fold record, nulling degenerate folds."""
     if degenerate:
-        return {'auc': None, 'ap': None, 'f1': None,
+        return {'auc': None, 'ap': None, 'f1': None, 'precision': None,
+                'recall': None, 'threshold': None, 'predicted_positive_rate': None,
                 'convergence_epoch': result['convergence_epoch']}
     return {'auc': result['test_auc'], 'ap': result['test_ap'],
-            'f1': result['test_f1'],
+            'f1': result['test_f1_calibrated'],
+            'precision': result['test_precision'],
+            'recall': result['test_recall'],
+            'threshold': result['decision_threshold'],
+            'predicted_positive_rate': result['test_predicted_positive_rate'],
             'convergence_epoch': result['convergence_epoch']}
 
 
 def baseline_record(metrics, degenerate):
     """Convert baseline metrics into a fold record, nulling degenerate folds."""
     if degenerate:
-        return {'auc': None, 'ap': None, 'f1': None}
-    return {'auc': metrics['auc'], 'ap': metrics['ap'], 'f1': metrics['f1']}
+        return {'auc': None, 'ap': None, 'f1': None, 'precision': None,
+                'recall': None, 'threshold': None, 'predicted_positive_rate': None}
+    return {'auc': metrics['auc'], 'ap': metrics['ap'], 'f1': metrics['f1'],
+            'precision': metrics['precision'], 'recall': metrics['recall'],
+            'threshold': metrics['threshold'],
+            'predicted_positive_rate': metrics['predicted_positive_rate']}
 
 
 # --------------------------------------------------------------------------
@@ -399,6 +408,17 @@ def main(argv=None):
 
                 # ---- GNN ----
                 full_edges = get_edge_configs(d)
+                calibration_x = None
+                calibration_x_full = None
+                if mode == 'masked':
+                    # Withhold the same features from validation nodes so the
+                    # decision threshold is calibrated under the inference
+                    # condition rather than on unmasked data.
+                    calibration_x_full = d['su'].x.clone()
+                    calibration_x_full[
+                        torch.as_tensor(val_idx, dtype=torch.long).reshape(-1, 1),
+                        MASK_COLS] = 0.0
+
                 if inductive:
                     keep_idx = np.concatenate([train_idx, val_idx])
                     sub, remap = build_induced_subgraph(d, keep_idx)
@@ -409,8 +429,13 @@ def main(argv=None):
                     sub['su'].train_mask = sub_train
                     sub['su'].val_mask = sub_val
                     train_graph, train_edges = sub, get_edge_configs(sub)
+                    if mode == 'masked':
+                        calibration_x = sub['su'].x.clone()
+                        val_sub_idx = sub_val.nonzero(as_tuple=False).flatten()
+                        calibration_x[val_sub_idx.reshape(-1, 1), MASK_COLS] = 0.0
                 else:
                     train_graph, train_edges = d, full_edges
+                    calibration_x = calibration_x_full
 
                 for model_type in model_types:
                     for edge_name in edge_configs_requested:
@@ -423,7 +448,7 @@ def main(argv=None):
                             train_graph, train_edges[edge_name], model_type,
                             fold_config, name, save_model=False,
                             eval_data=d, eval_edge_index_dict=full_edges[edge_name],
-                            eval_mask=test_mask,
+                            eval_mask=test_mask, calibration_x=calibration_x,
                         )
                         fold_record['gnn'][key] = gnn_record(res, degenerate)
                         auc = fold_record['gnn'][key]['auc']
@@ -434,8 +459,11 @@ def main(argv=None):
                 cache_key = (protocol.replace('_inductive', '_transductive'), fold, mode)
                 if cache_key not in baseline_cache:
                     X = d['su'].x.numpy()
+                    X_cal = (calibration_x_full.numpy()
+                             if calibration_x_full is not None else X)
                     base = run_baselines(X[train_idx], y[train_idx],
-                                         X[test_idx], y[test_idx], config)
+                                         X[test_idx], y[test_idx], config,
+                                         X_val=X_cal[val_idx], y_val=y[val_idx])
                     baseline_cache[cache_key] = {
                         name: baseline_record(metrics, degenerate)
                         for name, metrics in base.items()

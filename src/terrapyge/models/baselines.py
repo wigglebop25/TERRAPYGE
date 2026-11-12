@@ -10,7 +10,11 @@ import pickle
 from pathlib import Path
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import roc_auc_score, average_precision_score, f1_score
+from sklearn.metrics import (
+    roc_auc_score, average_precision_score, f1_score, precision_score, recall_score,
+)
+
+from src.terrapyge.utils.metrics import prevalence_matched_threshold
 
 
 class BaselineModel:
@@ -46,18 +50,20 @@ class BaselineModel:
         """
         raise NotImplementedError
 
-    def evaluate(self, X_test, y_test):
+    def evaluate(self, X_test, y_test, threshold=0.5):
         """Evaluate model on test set.
 
         Args:
             X_test: Test features [N_test, F].
             y_test: Test labels [N_test].
+            threshold: Probability threshold for the positive class. Callers
+                should pass a threshold selected on validation data.
 
         Returns:
-            Dict with auc, ap, f1 metrics.
+            Dict with auc, ap, f1, precision, recall and threshold.
         """
         probs = self.predict_proba(X_test)
-        preds = (probs > 0.5).astype(int)
+        preds = (probs >= threshold).astype(int)
 
         try:
             auc = roc_auc_score(y_test, probs)
@@ -73,6 +79,10 @@ class BaselineModel:
             'auc': float(auc),
             'ap': float(ap),
             'f1': float(f1),
+            'precision': float(precision_score(y_test, preds, zero_division=0)),
+            'recall': float(recall_score(y_test, preds, zero_division=0)),
+            'threshold': float(threshold),
+            'predicted_positive_rate': float(preds.mean()) if preds.size else 0.0,
         }
 
     def save(self, path):
@@ -168,7 +178,8 @@ class XGBoostBaseline(BaselineModel):
         return self.model.predict_proba(X)[:, 1]
 
 
-def run_baselines(X_train, y_train, X_test, y_test, config=None):
+def run_baselines(X_train, y_train, X_test, y_test, config=None,
+                  X_val=None, y_val=None):
     """Run all baseline models and return comparison results.
 
     Args:
@@ -177,6 +188,9 @@ def run_baselines(X_train, y_train, X_test, y_test, config=None):
         X_test: Test features [N_test, F].
         y_test: Test labels [N_test].
         config: Configuration dict with baseline params.
+        X_val: Optional validation features. When given, the decision threshold
+            is selected on validation data instead of defaulting to 0.5.
+        y_val: Optional validation labels.
 
     Returns:
         results: Dict with metrics for each baseline model.
@@ -190,13 +204,22 @@ def run_baselines(X_train, y_train, X_test, y_test, config=None):
         XGBoostBaseline(baseline_cfg.get('xgboost', {})),
     ]
 
+    calibrate = X_val is not None and y_val is not None and len(y_val) > 0
+
     results = {}
     for model in models:
         print(f'\nTraining {model.name}...')
         model.train(X_train, y_train)
-        metrics = model.evaluate(X_test, y_test)
+
+        threshold = 0.5
+        if calibrate:
+            threshold = prevalence_matched_threshold(y_val, model.predict_proba(X_val))
+
+        metrics = model.evaluate(X_test, y_test, threshold=threshold)
         results[model.name] = metrics
-        print(f'  AUC: {metrics["auc"]:.4f} | AP: {metrics["ap"]:.4f} | F1: {metrics["f1"]:.4f}')
+        print(f'  AUC: {metrics["auc"]:.4f} | AP: {metrics["ap"]:.4f} | '
+              f'F1: {metrics["f1"]:.4f} @ {threshold:.3f} | '
+              f'P: {metrics["precision"]:.4f} | R: {metrics["recall"]:.4f}')
 
     return results
 
